@@ -57,13 +57,19 @@ jobs:
             echo "created=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Push to Notion
+      - name: Install Notion dependencies
         if: steps.check.outputs.created == 'true'
-        uses: tryfabric/markdown-to-notion@main
-        with:
-          file: articles/${{ steps.date.outputs.date }}-claude-code-weekly.md
-          notion_token: ${{ secrets.NOTION_TOKEN }}
-          notion_id: ${{ secrets.NOTION_PAGE_ID }}
+        run: npm install @notionhq/client @tryfabric/martian
+
+      - name: Push to Notion Database
+        if: steps.check.outputs.created == 'true'
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: 2e41678ae98580718f2ede34e2892c71
+        run: |
+          node scripts/push-to-notion.js \
+            "articles/${{ steps.date.outputs.date }}-claude-code-weekly.md" \
+            "${{ steps.date.outputs.date }}"
 
       - name: Commit and push
         if: steps.check.outputs.created == 'true'
