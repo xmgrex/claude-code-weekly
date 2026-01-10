@@ -46,7 +46,7 @@ jobs:
             PROMPT="prompts/research.md の指示に従ってClaude Codeの最新情報をリサーチし、${OUTPUT_FILE} に記事を書いてください。"
           fi
 
-          claude -p "$PROMPT" --allowedTools "WebSearch,WebFetch,Write,Read"
+          claude -p "$PROMPT" --model claude-sonnet-4-5-20250929 --allowedTools "WebSearch,WebFetch,Write,Read"
 
       - name: Check if article was created
         id: check
