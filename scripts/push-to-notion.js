@@ -23,6 +23,10 @@ async function main() {
   const summaryMatch = markdown.match(/## 概要\n\n([\s\S]*?)(?=\n##|\n---)/);
   const summary = summaryMatch ? summaryMatch[1].trim().slice(0, 2000) : '';
 
+  // Extract first source URL from markdown
+  const urlMatch = markdown.match(/\[.*?\]\((https?:\/\/[^\)]+)\)/);
+  const sourceUrl = urlMatch ? urlMatch[1] : 'https://github.com/xmgrex/claude-code-weekly';
+
   // Convert markdown to Notion blocks
   const blocks = markdownToBlocks(markdown);
 
@@ -60,6 +64,9 @@ async function main() {
             },
           },
         ],
+      },
+      '引用元': {
+        url: sourceUrl,
       },
     },
     children: blocks.slice(0, 100), // Notion API limit: 100 blocks per request
