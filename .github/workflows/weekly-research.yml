@@ -33,24 +33,20 @@ jobs:
         id: date
         run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
 
-      - name: Read research prompt
-        id: prompt
-        run: |
-          PROMPT=$(cat prompts/research.md)
-          if [ -n "${{ github.event.inputs.custom_topic }}" ]; then
-            PROMPT="${PROMPT}\n\n追加トピック: ${{ github.event.inputs.custom_topic }}"
-          fi
-          echo "prompt<<EOF" >> $GITHUB_OUTPUT
-          echo "$PROMPT" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
       - name: Run Claude Code research
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          claude -p "${{ steps.prompt.outputs.prompt }}" \
-            --allowedTools "WebSearch,WebFetch,Write,Read" \
-            --output-file articles/${{ steps.date.outputs.date }}-claude-code-weekly.md
+          OUTPUT_FILE="articles/${{ steps.date.outputs.date }}-claude-code-weekly.md"
+          CUSTOM_TOPIC="${{ github.event.inputs.custom_topic }}"
+
+          if [ -n "$CUSTOM_TOPIC" ]; then
+            PROMPT="prompts/research.md の指示に従ってClaude Codeの最新情報をリサーチし、${OUTPUT_FILE} に記事を書いてください。追加トピック: ${CUSTOM_TOPIC}"
+          else
+            PROMPT="prompts/research.md の指示に従ってClaude Codeの最新情報をリサーチし、${OUTPUT_FILE} に記事を書いてください。"
+          fi
+
+          claude -p "$PROMPT" --allowedTools "WebSearch,WebFetch,Write,Read"
 
       - name: Check if article was created
         id: check
@@ -77,4 +73,3 @@ jobs:
           git add articles/
           git commit -m "docs: add weekly Claude Code research (${{ steps.date.outputs.date }})" || exit 0
           git push
-
