@@ -77,3 +77,4 @@ jobs:
           git add articles/
           git commit -m "docs: add weekly Claude Code research (${{ steps.date.outputs.date }})" || exit 0
           git push
+
