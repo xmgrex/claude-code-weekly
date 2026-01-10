@@ -63,11 +63,11 @@ jobs:
 
       - name: Push to Notion
         if: steps.check.outputs.created == 'true'
-        uses: tryfabric/markdown-to-notion@v1
+        uses: tryfabric/markdown-to-notion@main
         with:
-          notion-token: ${{ secrets.NOTION_TOKEN }}
-          page-id: ${{ secrets.NOTION_PAGE_ID }}
-          markdown-file: articles/${{ steps.date.outputs.date }}-claude-code-weekly.md
+          file: articles/${{ steps.date.outputs.date }}-claude-code-weekly.md
+          notion_token: ${{ secrets.NOTION_TOKEN }}
+          notion_id: ${{ secrets.NOTION_PAGE_ID }}
 
       - name: Commit and push
         if: steps.check.outputs.created == 'true'
