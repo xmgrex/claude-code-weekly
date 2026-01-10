@@ -1,0 +1,79 @@
+name: Weekly Claude Code Research
+
+on:
+  schedule:
+    # 毎週月曜 00:00 UTC (日本時間 09:00)
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      custom_topic:
+        description: '特定のトピックを指定（空欄で通常実行）'
+        required: false
+        default: ''
+
+jobs:
+  research-and-write:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Read research prompt
+        id: prompt
+        run: |
+          PROMPT=$(cat prompts/research.md)
+          if [ -n "${{ github.event.inputs.custom_topic }}" ]; then
+            PROMPT="${PROMPT}\n\n追加トピック: ${{ github.event.inputs.custom_topic }}"
+          fi
+          echo "prompt<<EOF" >> $GITHUB_OUTPUT
+          echo "$PROMPT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Run Claude Code research
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          claude -p "${{ steps.prompt.outputs.prompt }}" \
+            --allowedTools "WebSearch,WebFetch,Write,Read" \
+            --output-file articles/${{ steps.date.outputs.date }}-claude-code-weekly.md
+
+      - name: Check if article was created
+        id: check
+        run: |
+          if [ -f "articles/${{ steps.date.outputs.date }}-claude-code-weekly.md" ]; then
+            echo "created=true" >> $GITHUB_OUTPUT
+          else
+            echo "created=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Push to Notion
+        if: steps.check.outputs.created == 'true'
+        uses: tryfabric/markdown-to-notion@v1
+        with:
+          notion-token: ${{ secrets.NOTION_TOKEN }}
+          page-id: ${{ secrets.NOTION_PAGE_ID }}
+          markdown-file: articles/${{ steps.date.outputs.date }}-claude-code-weekly.md
+
+      - name: Commit and push
+        if: steps.check.outputs.created == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add articles/
+          git commit -m "docs: add weekly Claude Code research (${{ steps.date.outputs.date }})" || exit 0
+          git push
