@@ -19,6 +19,10 @@ async function main() {
   // Read markdown file
   const markdown = fs.readFileSync(filePath, 'utf-8');
 
+  // Extract summary from markdown (first paragraph after ## 概要)
+  const summaryMatch = markdown.match(/## 概要\n\n([\s\S]*?)(?=\n##|\n---)/);
+  const summary = summaryMatch ? summaryMatch[1].trim().slice(0, 2000) : '';
+
   // Convert markdown to Notion blocks
   const blocks = markdownToBlocks(markdown);
 
@@ -28,24 +32,33 @@ async function main() {
       database_id: databaseId,
     },
     properties: {
-      Name: {
+      'タイトル': {
         title: [
           {
             text: {
-              content: `Claude Code Weekly - ${articleDate}`,
+              content: `${articleDate}--Claude-Code-news`,
             },
           },
         ],
       },
-      Date: {
+      '日付': {
         date: {
           start: articleDate,
         },
       },
-      Tags: {
+      'タグ': {
         multi_select: [
           { name: 'claude-code' },
           { name: 'weekly' },
+        ],
+      },
+      '要約': {
+        rich_text: [
+          {
+            text: {
+              content: summary,
+            },
+          },
         ],
       },
     },
